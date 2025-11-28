@@ -103,8 +103,8 @@
             <span class="text-2xl">👩‍🏫</span>
             <h1 class="text-lg font-bold font-cute">호치민 쌤 (Cô Sài Gòn)</h1>
         </div>
-        <button id="settingsBtn" class="p-2 hover:bg-teal-500 rounded-full transition">
-            <!-- Cog Icon -->
+        <!-- 설정 버튼 (필요시 API 키 수정용) -->
+        <button id="settingsBtn" class="p-2 hover:bg-teal-500 rounded-full transition" title="API Key 재설정">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -132,8 +132,7 @@
             <div class="w-8 h-8 rounded-full bg-teal-200 flex items-center justify-center text-lg shadow-sm flex-shrink-0">👩‍🏫</div>
             <div class="bubble bg-white text-gray-800 rounded-tl-none border border-gray-100">
                 <p>안녕하세요! 호치민에서 온 베트남어 선생님이에요. 👋<br>
-                저랑 같이 베트남 남부 사투리를 재미있게 배워봐요!<br>
-                <strong>오른쪽 상단 톱니바퀴</strong>를 눌러 API 키를 먼저 설정해주세요.</p>
+                저랑 같이 베트남 남부 사투리를 재미있게 배워봐요!</p>
             </div>
         </div>
     </main>
@@ -147,7 +146,7 @@
                 <div class="dot-flashing mx-2"></div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- 5. Input Area -->
     <footer class="p-3 bg-white border-t border-gray-200">
@@ -164,7 +163,7 @@
         </div>
     </footer>
 
-    <!-- API Key Modal -->
+    <!-- API Key Modal (저장된 키가 없을 때만 표시됨) -->
     <div id="apiModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-2xl transform transition-all">
             <h2 class="text-xl font-bold mb-4 text-teal-600">⚙️ 설정</h2>
@@ -174,11 +173,23 @@
                 <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition">취소</button>
                 <button onclick="saveApiKey()" class="px-4 py-2 bg-teal-400 hover:bg-teal-500 text-white rounded-lg font-bold shadow-md transition">저장하기</button>
             </div>
-            <p class="mt-4 text-xs text-gray-400 text-center">API Key는 브라우저 로컬 스토리지에만 저장됩니다.</p>
+            <p class="mt-4 text-xs text-gray-400 text-center">입력한 키는 브라우저에 저장됩니다.</p>
         </div>
     </div>
 
     <script>
+        // ============================================================================
+        // [사용자 설정] 여기에 API 키를 붙여넣으세요. (따옴표 안에 키 입력)
+        // 예: const HARDCODED_API_KEY = "AIzaSy...";
+        // ============================================================================
+        const HARDCODED_API_KEY = ""; 
+        
+        // [요청사항 반영] 모델명을 'gemini-2.5-flash'로 고정
+        // 주의: 만약 2.5 버전이 존재하지 않아 오류가 발생하면 'gemini-1.5-flash'로 변경해보세요.
+        const MODEL_NAME = "gemini-2.5-flash";
+        // ============================================================================
+
+
         // ---------------- CONSTANTS & CONFIG ----------------
         const SYSTEM_INSTRUCTION = `
         당신은 '호치민(남부) 베트남어' 전문 과외 선생님입니다. 
@@ -220,6 +231,13 @@
 
         // ---------------- INITIALIZATION ----------------
         window.addEventListener('DOMContentLoaded', () => {
+            // 1순위: 코드에 하드코딩된 키 확인
+            if (HARDCODED_API_KEY) {
+                console.log("AIzaSyAB87l0MeK7_6GuRDBmoi0cDBqOIWNgznU");
+                return; // 모달 띄우지 않음
+            }
+
+            // 2순위: 로컬 스토리지 확인
             const savedKey = localStorage.getItem('gemini_api_key');
             if (!savedKey) {
                 openModal();
@@ -228,10 +246,19 @@
             }
         });
 
+        function getApiKey() {
+            if (HARDCODED_API_KEY) return HARDCODED_API_KEY;
+            return localStorage.getItem('gemini_api_key');
+        }
+
         // ---------------- MODAL & SETTINGS ----------------
         settingsBtn.addEventListener('click', openModal);
 
         function openModal() {
+            // 하드코딩된 키가 있으면 모달을 열어도 입력창 대신 안내문구를 보여줄 수도 있지만,
+            // 사용자가 덮어쓰고 싶을 수도 있으므로 기존 값을 보여줍니다.
+            const currentKey = getApiKey();
+            if (currentKey) apiKeyInput.value = currentKey;
             apiModal.classList.remove('hidden');
         }
 
@@ -315,7 +342,7 @@
             const text = userInput.value.trim();
             if (!text) return;
 
-            const apiKey = localStorage.getItem('gemini_api_key');
+            const apiKey = getApiKey();
             if (!apiKey) {
                 openModal();
                 return;
@@ -334,7 +361,8 @@
 
             try {
                 // 4. API Call
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                // 사용자 요청에 따라 gemini-2.5-flash로 설정됨
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -349,6 +377,10 @@
                 const data = await response.json();
                 
                 if (data.error) {
+                    // 모델명 오류일 경우 힌트 제공
+                    if(data.error.code === 404 && MODEL_NAME.includes('2.5')) {
+                         throw new Error(`모델을 찾을 수 없습니다. ('${MODEL_NAME}')<br>혹시 gemini-1.5-flash를 의도하셨나요? 코드에서 MODEL_NAME을 수정해주세요.`);
+                    }
                     throw new Error(data.error.message);
                 }
 
@@ -363,7 +395,7 @@
 
             } catch (error) {
                 loadingIndicator.classList.add('hidden');
-                appendMessage('model', `❌ 오류가 발생했어요: ${error.message}<br>API 키를 확인하거나 잠시 후 다시 시도해주세요.`);
+                appendMessage('model', `❌ 오류가 발생했어요: ${error.message}`);
             }
         }
 
@@ -405,3 +437,4 @@
     </script>
 </body>
 </html>
+

@@ -146,7 +146,7 @@
     <script>
         // ================= CONFIG =================
         const HARDCODED_API_KEY = "AIzaSyDj4q62kq0vH0UGbtAl_gpyO1reHngv4I8"; 
-        const MODEL_NAME = "gemini-2.5-flash"; // 2.5가 없으면 1.5-flash로 자동 폴백 처리됨
+        const MODEL_NAME = "gemini-2.5-flash"; 
         
         // ================= PROMPTS =================
         const PROMPTS = {
@@ -190,7 +190,7 @@
         };
 
         // ================= STATE =================
-        let currentMode = 'girlfriend'; // 'girlfriend' | 'roleplay'
+        let currentMode = 'girlfriend'; 
         let chatHistory = [];
         let isAutoTts = false;
         let recognition = null;
@@ -264,10 +264,10 @@
                 appendMessage('model', `어떤 상황에서 연습하고 싶으신가요?<br>위의 버튼을 누르거나, **직접 상황을 설정**해서 말해주세요.<br>(예: "택시 기사가 되어서 나를 1군까지 태워줘.")`);
             }
 
-            // Reset History with new System Prompt
+            // Reset History
             chatHistory = [
                 { role: "user", parts: [{ text: PROMPTS[mode] }] },
-                { role: "model", parts: [{ text: "OK" }] } // Dummy ack to prevent error
+                { role: "model", parts: [{ text: "OK" }] }
             ];
         }
 
@@ -344,7 +344,7 @@
                     body: JSON.stringify({
                         contents: chatHistory,
                         generationConfig: {
-                            temperature: currentMode === 'girlfriend' ? 0.9 : 0.7, // 여친은 더 감성적이게
+                            temperature: currentMode === 'girlfriend' ? 0.9 : 0.7,
                             maxOutputTokens: 600,
                         }
                     })
@@ -426,8 +426,24 @@
             utterance.rate = 0.9;
             
             const voices = window.speechSynthesis.getVoices();
-            const vnVoice = voices.find(v => v.lang.includes('vi'));
-            if (vnVoice) utterance.voice = vnVoice;
+            
+            // 1순위: "Google" (보통 여성), "Linh" (iOS 여성), "HoaiMy" (Windows 여성) 이름이 들어간 베트남어 음성 찾기
+            let targetVoice = voices.find(v => v.lang.includes('vi') && (v.name.includes('Google') || v.name.includes('Linh') || v.name.includes('HoaiMy')));
+            
+            // 2순위: 베트남어 음성 아무거나
+            if (!targetVoice) {
+                targetVoice = voices.find(v => v.lang.includes('vi'));
+            }
+
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+                // 만약 남성 목소리(Microsoft An)밖에 없다면 피치를 높여서 여성스럽게 보정 시도
+                if (targetVoice.name.includes('An')) {
+                    utterance.pitch = 1.6; // 여성톤 흉내
+                } else {
+                    utterance.pitch = 1.1; // 약간 밝은 톤
+                }
+            }
 
             window.speechSynthesis.speak(utterance);
         }

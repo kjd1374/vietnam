@@ -522,8 +522,29 @@
          * Web Speech API (TTS) - 음성 합성
          */
         function speakText(text, isTest = false) {
+            // 1. 구글 번역기 TTS (고품질/자연스러움) 시도
+            // 모바일 브라우저 정책상 오디오 재생은 사용자 인터랙션 직후에만 안정적일 수 있음
+            // 실패 시 즉시 시스템 TTS로 넘어가는 로직
+            const encodedText = encodeURIComponent(text);
+            const googleTTSUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=vi&client=tw-ob`;
+            
+            const audio = new Audio(googleTTSUrl);
+            audio.playbackRate = 0.9; // 약간 천천히
+
+            audio.play()
+                .then(() => {
+                    console.log("Google TTS Playing...");
+                })
+                .catch(error => {
+                    console.warn("Google TTS 실패 (시스템 TTS 사용):", error);
+                    speakSystemTTS(text, isTest);
+                });
+        }
+
+        // 기존의 딱딱한 기계음 (백업용)
+        function speakSystemTTS(text, isTest = false) {
             if (!window.speechSynthesis) {
-                alert("이 브라우저는 음성 합성을 지원하지 않습니다.");
+                if (isTest) alert("이 브라우저는 음성 합성을 지원하지 않습니다.");
                 return;
             }
 

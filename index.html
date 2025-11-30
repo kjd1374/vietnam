@@ -232,17 +232,22 @@
         }
 
         function testVoice() {
-            // 베트남어 테스트 (못 알아들을 경우를 대비해 영어도 살짝 섞거나, 확실한 문장 사용)
+            ensureTTSUnlocked();
+            // 베트남어 테스트
             const testText = "Xin chào! Bạn có nghe thấy tôi nói không?"; 
             speakText(testText, true);
         }
 
         function unlockTTS() {
             if (ttsUnlocked) return;
-            const utterance = new SpeechSynthesisUtterance(' '); // 빈 공백
-            utterance.volume = 0.1; // 아주 작게
+            const utterance = new SpeechSynthesisUtterance(' ');
             window.speechSynthesis.speak(utterance);
             ttsUnlocked = true;
+        }
+
+        // 마이크 버튼이나 소리 테스트를 눌렀을 때도 확실하게 언락 수행
+        function ensureTTSUnlocked() {
+            if (!ttsUnlocked) unlockTTS();
         }
         const chatContainer = document.getElementById('chatContainer');
         const txtInput = document.getElementById('txtInput');
@@ -403,6 +408,7 @@
         }
 
         function toggleListening() {
+            ensureTTSUnlocked(); // 말하기 시작할 때 오디오 권한 확보
             if (isListening) {
                 recognition.stop();
             } else {
@@ -523,6 +529,7 @@
 
         /**
          * Web Speech API (TTS) - 음성 합성
+         * 모바일 호환성을 위해 로직 단순화
          */
         function speakText(text, isTest = false) {
             if (!window.speechSynthesis) {
@@ -530,35 +537,33 @@
                 return;
             }
 
-            // 1. 큐 초기화 (중요)
+            // 1. 기존 큐 삭제
             window.speechSynthesis.cancel();
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            // 2. 언어 및 튜닝 (로봇 느낌 줄이기)
-            utterance.lang = 'vi-VN'; 
-            utterance.rate = 0.85;  // 약간 천천히 (여유롭게)
-            utterance.pitch = 1.1;  // 톤을 살짝 높여서 밝은 느낌 (1.0이 기본)
+            // 2. 약간의 딜레이 후 재생 (모바일 씹힘 방지)
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // 3. 기본 설정 (가장 안전한 값)
+                utterance.lang = 'vi-VN'; 
+                utterance.rate = 0.9;  
+                // pitch, volume 등은 건드리지 않음 (모바일 버그 방지)
 
-            // 3. 목소리 찾기
-            if (voices.length === 0) {
-                voices = window.speechSynthesis.getVoices();
-            }
-
-            const vietVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'));
-            if (vietVoice) {
-                utterance.voice = vietVoice;
-            }
-
-            // 4. 에러 핸들링
-            utterance.onerror = (event) => {
-                console.error('TTS Error:', event);
-                if (isTest && event.error === 'not-allowed') {
-                    alert("브라우저가 소리 재생을 차단했습니다. 화면을 터치한 후 다시 시도해주세요.");
+                // 4. 목소리 할당 (선택적)
+                if (voices.length > 0) {
+                    const vietVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'));
+                    if (vietVoice) {
+                        utterance.voice = vietVoice;
+                    }
                 }
-            }
 
-            window.speechSynthesis.speak(utterance);
+                utterance.onerror = (e) => {
+                    console.error("TTS Error:", e);
+                    if (isTest) alert(`소리 재생 실패: ${e.error}\n(팁: 아이폰 무음모드 해제 / 베트남어 음성데이터 설치 필요)`);
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }, 50);
         }
         
         function showVoiceTip() {
